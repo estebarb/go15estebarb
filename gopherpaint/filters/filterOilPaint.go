@@ -1,11 +1,11 @@
 package filters
 
 import (
-	"appengine"
+	"context"
 	"image"
 )
 
-func FilterOilPaint(c appengine.Context, m image.Image) image.Image {
+func FilterOilPaint(c context.Context, m image.Image) image.Image {
 	bounds := m.Bounds()
 	out := image.NewNRGBA(bounds)
 	ys := bounds.Max.Y

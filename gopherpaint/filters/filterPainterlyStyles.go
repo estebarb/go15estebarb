@@ -1,11 +1,13 @@
 package filters
 
 import (
-	"appengine"
-	"code.google.com/p/draw2d/draw2d"
-	"github.com/disintegration/imaging"
+	"context"
 	"image"
 	"math"
+
+	"github.com/disintegration/imaging"
+	"github.com/llgcode/draw2d/draw2dimg"
+	"google.golang.org/appengine"
 )
 
 func generateBrushesStyles(minRad, numBrushes int) []int {
@@ -17,7 +19,7 @@ func generateBrushesStyles(minRad, numBrushes int) []int {
 	return brushes
 }
 
-func FilterPainterlyStyles(c appengine.Context, m image.Image, settings *PainterlySettings) image.Image {
+func FilterPainterlyStyles(c context.Context, m image.Image, settings *PainterlySettings) image.Image {
 	bounds := m.Bounds()
 	canvas := image.NewRGBA(bounds)
 
@@ -25,7 +27,6 @@ func FilterPainterlyStyles(c appengine.Context, m image.Image, settings *Painter
 	brushes := generateBrushes(settings.Style.Radius, settings.Style.NumOfBrushes)
 
 	for _, radius := range brushes {
-		c.Infof("Brush %v", radius)
 		refImage := imaging.Blur(m, settings.Style.BlurFactor*float64(radius)*2.0)
 		paintLayerStyles(canvas, refImage, radius, settings, c)
 	}
@@ -148,7 +149,7 @@ var StylePsychedelic = PainterlyStyle{
 }
 
 func paintLayerStyles(cnv *image.RGBA, refImage image.Image, radius int,
-	settings *PainterlySettings, c appengine.Context) image.Image {
+	settings *PainterlySettings, c context.Context) image.Image {
 	D := ImageDifference(cnv, refImage)
 	magGrad, oriGrad := GradientData(refImage)
 	ys := cnv.Bounds().Max.Y
@@ -189,7 +190,7 @@ func drawStroke(cnv *image.RGBA, points []MyStroke, refImage *image.Image) {
 	if len(points) == 0 {
 		return
 	}
-	gc := draw2d.NewGraphicContext(cnv)
+	gc := draw2dimg.NewGraphicContext(cnv)
 	s := points[0]
 	gc.MoveTo(float64(s.Point.X), float64(s.Point.Y))
 	gc.SetFillColor(s.Color)
@@ -244,7 +245,7 @@ func createCurve(cnv *image.RGBA,
 	gradOri [][]float64,
 	x0, y0, radius int,
 	settings *PainterlySettings,
-	c appengine.Context) []MyStroke {
+	c context.Context) []MyStroke {
 	// ------
 	MaxStrokeLength := settings.Style.MaximumStroke
 	MinStrokeLength := settings.Style.MinimumStroke

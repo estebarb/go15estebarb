@@ -1,20 +1,25 @@
-package gopherpaint
+package main
 
 import (
-	"appengine"
-	"appengine/blobstore"
-	"appengine/memcache"
-	"appengine/user"
 	"bytes"
+	"context"
 	"errors"
-	"filters"
 	"html/template"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	"image/png"
+	"log"
 	"net/http"
 	"time"
+
+	"github.com/estebarb/go15estebarb/gopherpaint/filters"
+	"github.com/estebarb/go15estebarb/gopherpaint/model"
+
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/blobstore"
+	"google.golang.org/appengine/memcache"
+	"google.golang.org/appengine/user"
 )
 
 var templates = map[string]*template.Template{
@@ -33,8 +38,24 @@ func init() {
 	http.HandleFunc("/", handler)
 }
 
-func serveError(c appengine.Context, w http.ResponseWriter, err error, r *http.Request) {
-	c.Errorf("%v", err)
+func main() {
+	appengine.Main()
+	/*
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+			log.Printf("Defaulting to port %s", port)
+		}
+
+		log.Printf("Listening on port %s", port)
+		if err := http.ListenAndServe(":"+port, nil); err != nil {
+			log.Fatal(err)
+		}
+	*/
+}
+
+func serveError(c context.Context, w http.ResponseWriter, err error, r *http.Request) {
+	log.Printf("%v", err)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -57,7 +78,7 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 		serveError(c, w, errors.New("no files uploaded"), r)
 		return
 	}
-	ImagesPOST(c, u, file[0], "grayscale")
+	model.ImagesPOST(c, u, file[0], "grayscale")
 	http.Redirect(w, r, "/prepare?blobKey="+string(file[0].BlobKey), http.StatusFound)
 }
 
@@ -74,7 +95,7 @@ func handleDelete(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	err := Images_Delete(c, usr, blobkey)
+	err := model.Images_Delete(c, usr, blobkey)
 	if err != nil {
 		serveError(c, w, err, r)
 	}
@@ -94,21 +115,21 @@ func handleShare(w http.ResponseWriter, r *http.Request) {
 	context["style"] = newstyle
 	u := user.Current(c)
 	if u != nil {
-		_, err := Images_UpdateStyle(c, u, imgkey, newstyle)
+		_, err := model.Images_UpdateStyle(c, u, imgkey, newstyle)
 		if err != nil {
-			c.Errorf("handleShare: %v", err)
+			log.Printf("handleShare: %v", err)
 		}
 
 		context["IsLogged"] = true
 		context["UserName"] = u.String()
 		context["LogoutURL"], err = user.LogoutURL(c, "/")
 		if err != nil {
-			c.Errorf("Error share logged:", err)
+			log.Printf("Error share logged:", err)
 		}
 	} else {
 		url, err := user.LoginURL(c, r.URL.String())
 		if err != nil {
-			c.Errorf("Error SetupPaint no logged:", err)
+			log.Printf("Error SetupPaint no logged:", err)
 		}
 		context["IsLogged"] = false
 		context["LoginURL"] = url
@@ -127,7 +148,7 @@ func handleSetupPaint(w http.ResponseWriter, r *http.Request) {
 	if u == nil {
 		url, err := user.LoginURL(c, r.URL.String())
 		if err != nil {
-			c.Errorf("Error SetupPaint no logged:", err)
+			log.Printf("Error SetupPaint no logged:", err)
 		}
 		context["IsLogged"] = false
 		context["LoginURL"] = url
@@ -136,7 +157,7 @@ func handleSetupPaint(w http.ResponseWriter, r *http.Request) {
 		context["UserName"] = u.String()
 		context["LogoutURL"], err = user.LogoutURL(c, "/")
 		if err != nil {
-			c.Errorf("Error SetupPaint logged:", err)
+			log.Printf("Error SetupPaint logged:", err)
 		}
 	}
 
@@ -164,7 +185,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			serveError(c, w, err, r)
 			return
 		}
-		pics, err := Images_OfUser_GET(c, u)
+		pics, err := model.Images_OfUser_GET(c, u)
 		if err != nil {
 			serveError(c, w, err, r)
 			return

@@ -1,7 +1,9 @@
-package gopherpaint
+package main
 
-import "testing"
-import "image/color"
+import (
+	"image/color"
+	"testing"
+)
 
 func TestDistance(t *testing.T) {
 	d := distance([]int{5, 5}, 5, 5)

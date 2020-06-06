@@ -1,14 +1,14 @@
 package filters
 
 import (
-	"appengine"
+	"context"
 	"image"
 	"image/color"
 	"math"
 	"math/rand"
 )
 
-func FilterVoronoi(c appengine.Context, m image.Image) image.Image {
+func FilterVoronoi(c context.Context, m image.Image) image.Image {
 	bounds := m.Bounds()
 	out := image.NewNRGBA(bounds)
 	numClusters := int(math.Sqrt(float64(bounds.Max.Y * bounds.Max.X)))

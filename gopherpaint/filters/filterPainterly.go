@@ -1,14 +1,15 @@
 package filters
 
 import (
-	"appengine"
-	"code.google.com/p/draw2d/draw2d"
-	"github.com/disintegration/imaging"
+	"context"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	"math"
 	"math/rand"
+
+	"github.com/disintegration/imaging"
+	"github.com/llgcode/draw2d/draw2dimg"
 )
 
 func generateBrushes(minRad, numBrushes int) []int {
@@ -20,7 +21,7 @@ func generateBrushes(minRad, numBrushes int) []int {
 	return brushes
 }
 
-func FilterPainterly(c appengine.Context, m image.Image) image.Image {
+func FilterPainterly(c context.Context, m image.Image) image.Image {
 	bounds := m.Bounds()
 	canvas := image.NewRGBA(bounds)
 
@@ -30,7 +31,6 @@ func FilterPainterly(c appengine.Context, m image.Image) image.Image {
 	brushes := generateBrushes(brushMinRadius, numOfBrushes)
 
 	for _, radius := range brushes {
-		c.Infof("Brush %v", radius)
 		refImage := imaging.Blur(m, float64(radius))
 		paintLayer(canvas, refImage, radius, 100)
 	}
@@ -83,7 +83,7 @@ func paintLayer(cnv *image.RGBA, refImage image.Image, radius int, T float64) im
 }
 
 func paintStrokes(cnv *image.RGBA, strokes []MyStroke) {
-	gc := draw2d.NewGraphicContext(cnv)
+	gc := draw2dimg.NewGraphicContext(cnv)
 	order := rand.Perm(len(strokes))
 
 	for _, v := range order {
